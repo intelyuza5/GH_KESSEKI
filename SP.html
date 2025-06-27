@@ -1,0 +1,246 @@
+¥<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>欠席・遅刻・調整フォーム</title>
+  <style>
+    body {
+      background: url("https://min-chi.material.jp/mc/materials/background-c/living2/_living2_1.jpg") no-repeat center center fixed;
+      background-size: cover;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      color: white;
+      text-shadow: 1px 1px 3px #000;
+      margin-top: 30px;
+    }
+    .form-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      max-width: 500px;
+      margin: 30px auto;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    .required {
+      color: red;
+      font-size: 0.9em;
+      margin-left: 5px;
+    }
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 100px;
+    }
+    .radio-group {
+      margin-top: 10px;
+      display: flex;
+      gap: 15px;
+    }
+    .radio-group label {
+      font-weight: normal;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #2ecc71;
+      color: white;
+      font-size: 1em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #27ae60;
+    }
+    #confirmArea {
+      display: none;
+    }
+    #loadingOverlay {
+      display: none;
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.6);
+      z-index:9999;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      opacity:0;
+      animation: fadein 0.5s forwards;
+    }
+    #loadingOverlay div.spinner {
+      border:8px solid #f3f3f3;
+      border-top:8px solid #3498db;
+      border-radius:50%;
+      width:60px; height:60px;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% {transform:rotate(0deg);}
+      100% {transform:rotate(360deg);}
+    }
+    @keyframes fadein {
+      to {opacity: 1;}
+    }
+  </style>
+</head>
+<body>
+  <h1>欠席・遅刻・調整フォーム<br>8:15までに連絡をお願いします</h1>
+  <div class="form-container">
+    <form id="mainForm">
+      <label for="date">日付<span class="required">必須</span></label>
+      <input type="date" name="date" id="date" required>
+
+      <label for="class">クラス<span class="required">必須</span></label>
+      <select name="class" id="class" required>
+        <option value="">選択してください</option>
+        <option value="1年A組">1年A組</option>
+        <option value="1年B組">1年B組</option>
+        <option value="2年A組">2年A組</option>
+        <option value="2年B組">2年B組</option>
+        <option value="3年A組">3年A組</option>
+        <option value="3年B組">3年B組</option>
+        <option value="3年C組">3年C組</option>
+      </select>
+
+      <label for="number">番号<span class="required">必須</span></label>
+      <input type="text" name="number" id="number" required placeholder="例：12">
+
+      <label for="name">氏名<span class="required">必須</span></label>
+      <input type="text" name="name" id="name" required placeholder="あなたの名前">
+
+      <label>種類<span class="required">必須</span></label>
+      <div class="radio-group">
+        <label><input type="radio" name="type" value="欠席" required> 欠席</label>
+        <label><input type="radio" name="type" value="遅刻"> 遅刻</label>
+        <label><input type="radio" name="type" value="調整"> 調整</label>
+      </div>
+
+      <div id="timeInput" style="display: none;">
+        <label for="time">何時ごろ来れるか</label>
+        <input type="text" name="time" id="time" placeholder="例：10時ごろ">
+      </div>
+
+      <div id="adjustInput" style="display: none;">
+        <label for="adjust">調整の内容</label>
+        <textarea name="adjust" id="adjust" placeholder="例：通院のため10:30に早退予定"></textarea>
+      </div>
+
+      <label for="reason">理由<span class="required">必須</span></label>
+      <textarea name="reason" id="reason" required></textarea>
+
+      <button type="button" onclick="showConfirm()">確認画面へ</button>
+    </form>
+
+    <div id="confirmArea">
+      <h3>確認画面</h3>
+      <p><strong>日付：</strong><span id="conf_date"></span></p>
+      <p><strong>クラス：</strong><span id="conf_class"></span></p>
+      <p><strong>番号：</strong><span id="conf_number"></span></p>
+      <p><strong>氏名：</strong><span id="conf_name"></span></p>
+      <p><strong>種類：</strong><span id="conf_type"></span></p>
+      <p id="conf_time_area" style="display: none;"><strong>来れる時間：</strong><span id="conf_time"></span></p>
+      <p id="conf_adjust_area" style="display: none;"><strong>調整内容：</strong><span id="conf_adjust"></span></p>
+      <p><strong>理由：</strong><span id="conf_reason"></span></p>
+
+      <button onclick="submitForm()">送信する</button>
+      <button onclick="goBack()">戻る</button>
+    </div>
+  </div>
+
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color:white; margin-top:20px;">送信中です...</p>
+  </div>
+
+  <script>
+    const form = document.getElementById("mainForm");
+    const confirmArea = document.getElementById("confirmArea");
+
+    // ラジオボタン切替で入力欄切り替え
+    form.type.forEach(radio => {
+      radio.addEventListener("change", () => {
+        document.getElementById("timeInput").style.display = (radio.value === "遅刻" && radio.checked) ? "block" : "none";
+        document.getElementById("adjustInput").style.display = (radio.value === "調整" && radio.checked) ? "block" : "none";
+      });
+    });
+
+    function showConfirm() {
+      if (!form.reportValidity()) return;
+
+      const date = form.date.value;
+      const className = form.class.value;
+      const number = form.number.value;
+      const name = form.name.value;
+      const type = form.type.value;
+      const time = form.time.value;
+      const adjust = form.adjust.value;
+      const reason = form.reason.value;
+
+      document.getElementById("conf_date").textContent = date;
+      document.getElementById("conf_class").textContent = className;
+      document.getElementById("conf_number").textContent = number;
+      document.getElementById("conf_name").textContent = name;
+      document.getElementById("conf_type").textContent = type;
+      document.getElementById("conf_reason").textContent = reason;
+
+      document.getElementById("conf_time_area").style.display = type === "遅刻" ? "block" : "none";
+      document.getElementById("conf_time").textContent = time || "未記入";
+
+      document.getElementById("conf_adjust_area").style.display = type === "調整" ? "block" : "none";
+      document.getElementById("conf_adjust").textContent = adjust || "未記入";
+
+      form.style.display = "none";
+      confirmArea.style.display = "block";
+    }
+
+    function goBack() {
+      form.style.display = "block";
+      confirmArea.style.display = "none";
+    }
+
+    function submitForm() {
+      const formData = new FormData(form);
+      formData.append("time", form.time.value);
+      formData.append("adjust", form.adjust.value);
+      formData.append("date", form.date.value);
+      formData.append("class", form.class.value);
+
+      const overlay = document.getElementById("loadingOverlay");
+      overlay.style.display = "flex"; // 表示＆フェードアニメ開始
+
+      fetch("https://script.google.com/macros/s/AKfycbyokUuRj7kZz6rycUP4INWzlR0vkKe3viLw_kE_GW2g_5TbDz1nF2FktlRw7i0TZhUmCw/exec", {
+        method: "POST",
+        body: formData
+      }).then(res => {
+        overlay.style.display = "none";
+        confirmArea.innerHTML = `<p style="text-align:center; font-size:1.2em;">送信が完了しました。<br>ありがとうございました！</p>`;
+      }).catch(err => {
+        overlay.style.display = "none";
+        alert("送信中にエラーが発生しました：" + err);
+      });
+    }
+  </script>
+</body>
+</html>
